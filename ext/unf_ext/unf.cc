@@ -15,6 +15,7 @@ extern "C" {
   ID FORM_NFC;
   ID FORM_NFKD;
   ID FORM_NFKC;
+  ID FORM_NFKC_CF;
 
   void Init_unf_ext() {
     VALUE mdl = rb_define_module("UNF");
@@ -24,10 +25,11 @@ extern "C" {
     rb_define_method(cls, "initialize", (VALUE (*)(...))unf_initialize, 0);
     rb_define_method(cls, "normalize", (VALUE (*)(...))unf_normalize, 2);
 
-    FORM_NFD = rb_intern("nfd");
-    FORM_NFC = rb_intern("nfc");
-    FORM_NFKD= rb_intern("nfkd");
-    FORM_NFKC= rb_intern("nfkc");
+    FORM_NFD    = rb_intern("nfd");
+    FORM_NFC    = rb_intern("nfc");
+    FORM_NFKD   = rb_intern("nfkd");
+    FORM_NFKC   = rb_intern("nfkc");
+    FORM_NFKC_CF= rb_intern("nfkc_cf");
   }
 
 
@@ -63,8 +65,10 @@ extern "C" {
       rlt = ptr->normalize(src, UNF::Normalizer::FORM_NFKD);
     else if(form_id == FORM_NFKC)
       rlt = ptr->normalize(src, UNF::Normalizer::FORM_NFKC);
+    else if(form_id == FORM_NFKC_CF)
+      rlt = ptr->normalize(src, UNF::Normalizer::FORM_NFKC_CF);
     else
-      rb_raise(rb_eArgError, "Specified Normalization-Form is unknown. Please select one from among :nfc, :nfd, :nfkc, :nfkd.");
+      rb_raise(rb_eArgError, "Specified Normalization-Form is unknown. Please select one from among :nfc, :nfd, :nfkc, :nfkd, :nfkc_cf.");
 
 #if defined(HAVE_RUBY_ENCODING_H)
     return rb_enc_str_new(rlt, strlen(rlt), rb_utf8_encoding());

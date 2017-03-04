@@ -13,6 +13,7 @@ class TestUnf < Test::Unit::TestCase
     open(Pathname(__FILE__).dirname + 'normalization-test.txt', 'r:utf-8').each_slice(6) { |lines|
       flunk "broken test file" if lines.size != 6 || lines.pop !~ /^$/
       str, nfc, nfd, nfkc, nfkd = lines
+
       assert_equal nfd,  normalizer.normalize(str,  :nfd)
       assert_equal nfd,  normalizer.normalize(nfd,  :nfd)
       assert_equal nfd,  normalizer.normalize(nfc,  :nfd)
@@ -36,6 +37,12 @@ class TestUnf < Test::Unit::TestCase
       assert_equal nfkc, normalizer.normalize(nfc,  :nfkc)
       assert_equal nfkc, normalizer.normalize(nfkc, :nfkc)
       assert_equal nfkc, normalizer.normalize(nfkd, :nfkc)
+
+      nfkc_cf = normalizer.normalize(str, :nfkc_cf)
+      assert_equal nfkc_cf, normalizer.normalize(nfd,  :nfkc_cf)
+      assert_equal nfkc_cf, normalizer.normalize(nfc,  :nfkc_cf)
+      assert_equal nfkc_cf, normalizer.normalize(nfkc, :nfkc_cf)
+      assert_equal nfkc_cf, normalizer.normalize(nfkd, :nfkc_cf)
     }
   end
 end

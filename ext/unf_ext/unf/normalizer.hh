@@ -13,38 +13,45 @@
 namespace UNF {
   class Normalizer {
   public:
-    enum Form { FORM_NFD, FORM_NFC, FORM_NFKD, FORM_NFKC };
+    enum Form { FORM_NFD, FORM_NFC, FORM_NFKD, FORM_NFKC, FORM_NFKC_CF };
 
   public:
     Normalizer()
       : nf_d(TABLE::NODES, TABLE::CANONICAL_DECOM_ROOT, TABLE::STRINGS),
-	nf_kd(TABLE::NODES, TABLE::COMPATIBILITY_DECOM_ROOT, TABLE::STRINGS),
-	nf_c(TABLE::NODES, TABLE::CANONICAL_COM_ROOT, TABLE::STRINGS),
-	nf_c_qc(TABLE::NODES, TABLE::NFC_ILLEGAL_ROOT),
-	nf_kc_qc(TABLE::NODES, TABLE::NFKC_ILLEGAL_ROOT),
-	ccc(TABLE::NODES, TABLE::CANONICAL_CLASS_ROOT)
+        nf_kd(TABLE::NODES, TABLE::COMPATIBILITY_DECOM_ROOT, TABLE::STRINGS),
+        nf_c(TABLE::NODES, TABLE::CANONICAL_COM_ROOT, TABLE::STRINGS),
+        nf_c_qc(TABLE::NODES, TABLE::NFC_ILLEGAL_ROOT),
+        nf_kc_qc(TABLE::NODES, TABLE::NFKC_ILLEGAL_ROOT),
+        nf_kc_cf(TABLE::NODES, TABLE::NFKC_CASEFOLD_ROOT, TABLE::STRINGS),
+        ccc(TABLE::NODES, TABLE::CANONICAL_CLASS_ROOT)
     {}
 
     const char* normalize(const char* src, Form form) {
       switch(form) {
-      case FORM_NFD:  return nfd(src);
-      case FORM_NFC:  return nfc(src);
-      case FORM_NFKD: return nfkd(src);
-      case FORM_NFKC: return nfkc(src);
-      default:        return src;
+      case FORM_NFD:     return nfd(src);
+      case FORM_NFC:     return nfc(src);
+      case FORM_NFKD:    return nfkd(src);
+      case FORM_NFKC:    return nfkc(src);
+      case FORM_NFKC_CF: return nfkc_cf(src);
+      default:           return src;
       }
     }
-    const char* nfd(const char* src)  { return decompose(src, nf_d); }
-    const char* nfkd(const char* src) { return decompose(src, nf_kd); }
-    const char* nfc(const char* src)  { return compose(src, nf_c_qc, nf_d); }
-    const char* nfkc(const char* src) { return compose(src, nf_kc_qc, nf_kd); }
+    const char* nfd(const char* src)     { return decompose(src, nf_d); }
+    const char* nfkd(const char* src)    { return decompose(src, nf_kd); }
+    const char* nfc(const char* src)     { return compose(src, nf_c_qc, nf_d); }
+    const char* nfkc(const char* src)    { return compose(src, nf_kc_qc, nf_kd); }
+    const char* nfkc_cf(const char* src) {
+      buffer4.assign(nfc(src));
+      buffer4.assign(decompose(buffer4.c_str(), nf_kc_cf));
+      return nfc(buffer4.c_str());
+    }
 
   private:
     const char* decompose(const char* src, const Trie::NormalizationForm& nf) {
       const char* beg = next_invalid_char(src, nf);
       if(*beg=='\0')
 	return src;
-      
+
       buffer.assign(src, beg);
       do {
 	const char* end = next_valid_starter(beg, nf);
@@ -52,8 +59,8 @@ namespace UNF {
 	beg = next_invalid_char(end, nf);
 	buffer.append(end, beg);
       } while(*beg!='\0');
-      
-      return buffer.c_str();      
+
+      return buffer.c_str();
     }
 
     void decompose_one(const char* beg, const char* end, const Trie::NormalizationForm& nf, std::string& buf) {
@@ -67,7 +74,7 @@ namespace UNF {
       const char* beg = next_invalid_char(src, nf);
       if(*beg=='\0')
 	return src;
-      
+
       buffer.assign(src, beg);
       while(*beg!='\0') {
 	const char* end = next_valid_starter(beg, nf);
@@ -78,7 +85,7 @@ namespace UNF {
 	buffer.append(end, beg);
       }
 
-      return buffer.c_str();      
+      return buffer.c_str();
     }
 
     const char* compose_one(const char* starter, const char* rest_starter, std::string& buf) {
@@ -97,7 +104,7 @@ namespace UNF {
       int last_canonical_class = 0;
       const char* cur = Util::nearest_utf8_char_start_point(src);
       const char* starter = cur;
-      
+
       for(; *cur != '\0'; cur = Util::nearest_utf8_char_start_point(cur+1)) {
 	int canonical_class = ccc.get_class(cur);
 	if(last_canonical_class > canonical_class && canonical_class != 0)
@@ -127,11 +134,13 @@ namespace UNF {
     const Trie::NormalizationForm nf_c;
     const Trie::NormalizationForm nf_c_qc;
     const Trie::NormalizationForm nf_kc_qc;
+    const Trie::NormalizationForm nf_kc_cf;
     const Trie::CanonicalCombiningClass ccc;
-    
+
     std::string buffer;
     std::string buffer2;
     std::string buffer3;
+    std::string buffer4;
     std::vector<unsigned char> canonical_classes;
   };
 }
