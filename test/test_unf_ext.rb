@@ -37,12 +37,13 @@ class TestUnf < Test::Unit::TestCase
       assert_equal nfkc, normalizer.normalize(nfc,  :nfkc)
       assert_equal nfkc, normalizer.normalize(nfkc, :nfkc)
       assert_equal nfkc, normalizer.normalize(nfkd, :nfkc)
+    }
 
-      nfkc_cf = normalizer.normalize(str, :nfkc_cf)
-      assert_equal nfkc_cf, normalizer.normalize(nfd,  :nfkc_cf)
-      assert_equal nfkc_cf, normalizer.normalize(nfc,  :nfkc_cf)
-      assert_equal nfkc_cf, normalizer.normalize(nfkc, :nfkc_cf)
-      assert_equal nfkc_cf, normalizer.normalize(nfkd, :nfkc_cf)
+    open(Pathname(__FILE__).dirname + 'nfkc-casefold-test.txt', 'r:utf-8').each_slice(3) { |lines|
+      flunk "broken test file" if lines.size != 3 || lines.pop !~ /^$/
+      str, nfkc_cf = lines
+
+      assert_equal nfkc_cf, normalizer.normalize(str, :nfkc_cf)
     }
   end
 end
